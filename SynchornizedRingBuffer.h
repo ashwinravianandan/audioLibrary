@@ -3,6 +3,7 @@
 #include <queue>
 #include <iostream>
 #include <condition_variable>
+#include <list>
 using namespace std;
 
 template <typename T>
@@ -16,7 +17,7 @@ class SynchronizedRingBuffer{
       SynchronizedRingBuffer( size_t queueSize ):_MaxRecords(queueSize ){}
       ~SynchronizedRingBuffer(){}
 
-      void enqueue( const vector<T>& data)
+      void enqueue( const list<T>& data)
       {
          cout<<"Queueing "<<data.size()<< "bytes of data"<<endl;
          lock_guard<std::mutex> lock( _Mutex );
@@ -36,7 +37,7 @@ class SynchronizedRingBuffer{
          cout<<"Data available: "<<_Buffer.size()<<endl;
       }
 
-      size_t dequeue( vector<T>& data, size_t nrOfRecords )
+      size_t dequeue( list<T>& data, size_t nrOfRecords )
       {
          unique_lock<std::mutex> condLock( _Mutex );
          cout<<"Waiting for queue to be filled"<<endl;

@@ -49,7 +49,7 @@ unsigned int AlsaMicrophone::read ( char* buffer, unsigned int bufferSize )
       _readInProgress = true;
       readThread = thread{ &AlsaMicrophone::pollAudioDevice, this };
    }
-   vector<char> data;
+   list<char> data;
    readBytes = AudioBufferQ::get()->dequeue( data , bufferSize);
    for( auto byte : data )
    {
@@ -82,6 +82,51 @@ bool AlsaMicrophone::close ( void )
 }
 
 /*..............................................................................
+ * @brief triggerRead
+ *
+ * Input Parameters:
+ *    @param: void
+ * Return Value:
+ *    @returns void
+ *
+ * External methods/variables:
+ *    @extern
+ *............................................................................*/
+void AlsaMicrophone::triggerRead ( void )
+{
+   char *data = new char[1024];
+   cout<<"Read triggered"<<endl;
+   auto retVal = snd_pcm_readi( _deviceHandle, data, 512 );
+   if( retVal == -EPIPE )
+   {
+      cout<<"underrun"<<endl;
+      retVal = snd_pcm_prepare( _deviceHandle );
+      if( retVal < 0 )
+      {
+         cout<<"could not prepare node"<<endl;
+      }
+   }
+   else if( retVal < 0 )
+   {
+      cout<<"read error"<<endl;
+   }
+   else
+   {
+      cout<<"Reader Thread: "<<retVal<<"bytes read"<<endl;
+      list<char> vectorData;
+      retVal *= 2;
+      for( auto ptr = data; retVal > 0; --retVal,ptr++ )
+      {
+         vectorData.push_back( *ptr );
+      }
+      AudioBufferQ::get()->enqueue( vectorData );
+      vectorData.clear();
+   }
+   delete []data;
+
+   return ;/*void*/
+}
+/*..............................................................................
  * @brief pollAudioDevice
  *
  * Input Parameters:
@@ -96,41 +141,13 @@ void AlsaMicrophone::pollAudioDevice (  )
 {
    auto count = snd_pcm_poll_descriptors_count( _deviceHandle );
    auto descriptors = new pollfd[count];
-   auto nrOfConfiguredDesc = snd_pcm_poll_descriptors( _deviceHandle, descriptors, count );
+   (void)snd_pcm_poll_descriptors( _deviceHandle, descriptors, count );
    while( 1 )
    {
       if( false == _readInProgress )
          break;
 
-      char *data = new char[1024];
-      auto retVal = snd_pcm_readi( _deviceHandle, data, 512 );
-      if( retVal == -EPIPE )
-      {
-         cout<<"underrun"<<endl;
-         retVal = snd_pcm_prepare( _deviceHandle );
-         if( retVal < 0 )
-         {
-            cout<<"could not prepare node"<<endl;
-            break;
-         }
-      }
-      else if( retVal < 0 )
-      {
-         cout<<"read error"<<endl;
-      }
-      else
-      {
-         cout<<"Reader Thread: "<<retVal<<"bytes read"<<endl;
-         vector<char> vectorData;
-         retVal *= 2;
-         for( auto ptr = data; retVal > 0; --retVal,ptr++ )
-         {
-            vectorData.push_back( *ptr );
-         }
-         AudioBufferQ::get()->enqueue( vectorData );
-         vectorData.clear();
-      }
-      delete []data;
+      triggerRead();
 
       if( 0 > poll( descriptors, count, 500 ) )
       {
@@ -170,7 +187,7 @@ void AlsaMicrophone::pollAudioDevice (  )
             else
             {
                cout<<"reader thread, Poll phase => read "<<retVal*2<<"bytes"<<endl;
-               vector<char> data;
+               list<char> data;
                retVal*=2;
                for( auto ptr = buffer; retVal > 0; --retVal,ptr++ )
                {

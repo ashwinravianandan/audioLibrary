@@ -21,12 +21,12 @@ shared_ptr<AudioBufferQ> AudioBufferQ::get( void )
    return _audioBufferQ;
 }
 
-void AudioBufferQ::enqueue( const vector<char>& data )
+void AudioBufferQ::enqueue( const list<char>& data )
 {
    _ringBuffer.enqueue( data );
 }
 
-size_t AudioBufferQ::dequeue( vector<char>& data, size_t bytes )
+size_t AudioBufferQ::dequeue( list<char>& data, size_t bytes )
 {
    return _ringBuffer.dequeue( data, bytes );
 }

@@ -10,6 +10,7 @@ class AlsaMicrophone : public AudioInput<snd_pcm_t>
    private:
       bool _readInProgress;
       thread readThread;
+      void triggerRead ( void );
    public:
       AlsaMicrophone():_readInProgress(false){}
       ~AlsaMicrophone(){}
