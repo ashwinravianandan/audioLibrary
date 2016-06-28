@@ -47,9 +47,7 @@ unsigned int AlsaMicrophone::read ( char* buffer, unsigned int bufferSize )
    {
       /// create thread
       _readInProgress = true;
-      cout<<"Read is not in progress, creating thread"<<endl;
       readThread = thread{ &AlsaMicrophone::pollAudioDevice, this };
-      cout<<"Thread created"<<endl;
    }
    vector<char> data;
    readBytes = AudioBufferQ::get()->dequeue( data , bufferSize);
@@ -96,19 +94,16 @@ bool AlsaMicrophone::close ( void )
  *............................................................................*/
 void AlsaMicrophone::pollAudioDevice (  )
 {
-   cout<<"Thread to poll device has started"<<endl;
    auto count = snd_pcm_poll_descriptors_count( _deviceHandle );
-   cout<< "Polling "<<count<<" descriptors"<<endl;
    auto descriptors = new pollfd[count];
    auto nrOfConfiguredDesc = snd_pcm_poll_descriptors( _deviceHandle, descriptors, count );
-   cout<<"Populated "<<nrOfConfiguredDesc<<" descriptors"<<endl;
    while( 1 )
    {
       if( false == _readInProgress )
          break;
 
-      char* data = new char[512];
-      auto retVal = snd_pcm_readi( _deviceHandle, data, 256 );
+      char *data = new char[1024];
+      auto retVal = snd_pcm_readi( _deviceHandle, data, 512 );
       if( retVal == -EPIPE )
       {
          cout<<"underrun"<<endl;
@@ -125,14 +120,13 @@ void AlsaMicrophone::pollAudioDevice (  )
       }
       else
       {
-         retVal*=2;
          cout<<"Reader Thread: "<<retVal<<"bytes read"<<endl;
          vector<char> vectorData;
+         retVal *= 2;
          for( auto ptr = data; retVal > 0; --retVal,ptr++ )
          {
             vectorData.push_back( *ptr );
          }
-
          AudioBufferQ::get()->enqueue( vectorData );
          vectorData.clear();
       }
@@ -154,9 +148,9 @@ void AlsaMicrophone::pollAudioDevice (  )
          }
          else if( POLLIN == pollEvent )
          {
-            cout<<"Read and enqueue data"<<endl;
             auto frames = snd_pcm_avail( _deviceHandle );
-            char* buffer = new char[ frames*2];
+            cout<<"Number of frames available from polling: "<<frames;
+            char* buffer = new char[ frames*2 ];
             auto retVal = snd_pcm_readi( _deviceHandle, buffer, frames );
             if( retVal == -EPIPE )
             {
@@ -176,8 +170,8 @@ void AlsaMicrophone::pollAudioDevice (  )
             else
             {
                cout<<"reader thread, Poll phase => read "<<retVal*2<<"bytes"<<endl;
-               retVal*=2;
                vector<char> data;
+               retVal*=2;
                for( auto ptr = buffer; retVal > 0; --retVal,ptr++ )
                {
                   data.push_back( *ptr );

@@ -3,6 +3,8 @@
 #include "AlsaMicrophoneConfig.h"
 #include <memory>
 #include <fstream>
+#include "SynchornizedRingBuffer.h"
+#include <unistd.h>
 using namespace std;
 
 
@@ -111,13 +113,13 @@ int main()
    { new AlsaMicConfig{} };
 
 
-   cout<<microphone->open( "plughw:0,0" );
+
+   cout<<microphone->open( "default" );
    cout<<micConfig->initializeConfig( microphone.get() );
    cout<<micConfig->setBitDepth( 16, microphone.get() );
    cout<<micConfig->setSampleRate( 16000, microphone.get() );
    cout<<micConfig->setNumberOfChannels( 1, microphone.get() );
    micConfig->applySetting( microphone.get() );
-
    //snd_pcm_sw_params_t *swParams;
 
    //snd_pcm_sw_params_alloca( &swParams );
@@ -153,19 +155,18 @@ int main()
    //{
    //   cout<<"error setting start threshold"<<endl;
    //}
-
-
    ofstream utterance{ "utter.pcm",ios::binary};
 
    for( auto i = 0; i < 200; ++i )
    {
-      char buffer[512];
-      auto retVal = microphone->read( buffer, 512 );
+      char buffer[1024];
+      auto retVal = microphone->read( buffer, 1024);
       cout<<"Read "<<retVal<<" bytes"<<endl;
       utterance.write( buffer, retVal );
    }
    utterance.close();
-
    microphone->close();
+
    return 0;
 }
+

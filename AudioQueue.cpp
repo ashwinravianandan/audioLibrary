@@ -15,7 +15,7 @@ shared_ptr<AudioBufferQ> AudioBufferQ::get( void )
       lock_guard<mutex> lock( _Mutex );
       if( nullptr == _audioBufferQ )
       {
-         _audioBufferQ = shared_ptr<AudioBufferQ>{ new AudioBufferQ{ 2048 }};
+         _audioBufferQ = shared_ptr<AudioBufferQ>{ new AudioBufferQ{ 20000 }};
       }
    }
    return _audioBufferQ;

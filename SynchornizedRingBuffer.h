@@ -24,6 +24,7 @@ class SynchronizedRingBuffer{
          {
             if( _Buffer.size() == _MaxRecords )
             {
+               cout<<"Error: Throwing away data"<<endl;
                _Buffer.pop();
             }
             _Buffer.push( item );
@@ -32,6 +33,7 @@ class SynchronizedRingBuffer{
          {
             _QNotEmpty.notify_one();
          }
+         cout<<"Data available: "<<_Buffer.size()<<endl;
       }
 
       size_t dequeue( vector<T>& data, size_t nrOfRecords )
@@ -51,6 +53,7 @@ class SynchronizedRingBuffer{
             _Buffer.pop();
             --count;
          }
+         cout<<"Data available: "<<_Buffer.size()<<endl;
          return bytesRead;
       }
 };

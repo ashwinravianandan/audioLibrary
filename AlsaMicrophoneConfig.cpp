@@ -88,6 +88,8 @@ bool AlsaMicConfig::setSampleRate ( unsigned int rate,
       AudioDevice<snd_pcm_t>* device )
 {
    bool success = true;
+   //auto retVal = snd_pcm_hw_params_set_rate_near( device->getHandle(), 
+   //      _config, &rate, 0 );
    auto retVal = snd_pcm_hw_params_set_rate( device->getHandle(), 
          _config, rate, 0 );
    if( retVal < 0 )
