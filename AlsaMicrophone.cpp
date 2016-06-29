@@ -74,10 +74,12 @@ bool AlsaMicrophone::close ( void )
 {
    bool success = true;
    _readInProgress = false;
-   /*
-    * @todo : close the pcm node
-    */
-   
+
+   auto retVal = snd_pcm_close( _deviceHandle );
+   if( retVal < 0)
+   {
+      success = false;
+   }
    return success;/*bool*/
 }
 
