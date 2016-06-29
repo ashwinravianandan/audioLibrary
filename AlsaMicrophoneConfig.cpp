@@ -13,7 +13,7 @@ using namespace std;
  * External methods/variables:
  *    @extern
  *............................................................................*/
-bool AlsaMicConfig::initializeConfig ( AudioDevice<snd_pcm_t>* audioDevice  )
+bool AlsaMicConfig::initializeConfig ( AlsaDevice* audioDevice  )
 {
    bool success = true;
    do
@@ -56,18 +56,31 @@ bool AlsaMicConfig::initializeConfig ( AudioDevice<snd_pcm_t>* audioDevice  )
  * External methods/variables:
  *    @extern
  *............................................................................*/
-bool AlsaMicConfig::setBitDepth ( unsigned int depth, AudioDevice<snd_pcm_t>* audioDevice )
+bool AlsaMicConfig::setBitDepth ( unsigned int depth, AlsaDevice* audioDevice )
 {
    bool success = true;
    if( 16 == depth )
    {
       auto retVal = snd_pcm_hw_params_set_format(
             audioDevice->getHandle(), _config, SND_PCM_FORMAT_S16_LE );
+      _frameSize = 2;
       if( retVal < 0 )
       {
          cout<<"could not set capture format"<<endl;
          success = false;
       }
+   }
+   else if ( 32 == depth )
+   {
+      _frameSize = 4;
+      auto retVal = snd_pcm_hw_params_set_format(
+            audioDevice->getHandle(), _config, SND_PCM_FORMAT_S32_LE );
+      if( retVal < 0 )
+      {
+         cout<<"could not set capture format"<<endl;
+         success = false;
+      }
+      
    }
    return success;/*bool*/
 }
@@ -85,7 +98,7 @@ bool AlsaMicConfig::setBitDepth ( unsigned int depth, AudioDevice<snd_pcm_t>* au
  *    @extern
  *............................................................................*/
 bool AlsaMicConfig::setSampleRate ( unsigned int rate, 
-      AudioDevice<snd_pcm_t>* device )
+      AlsaDevice* device )
 {
    bool success = true;
    //auto retVal = snd_pcm_hw_params_set_rate_near( device->getHandle(), 
@@ -114,8 +127,9 @@ bool AlsaMicConfig::setSampleRate ( unsigned int rate,
  *    @extern
  *............................................................................*/
 bool AlsaMicConfig::setNumberOfChannels ( unsigned int nrOfChannels
-     , AudioDevice<snd_pcm_t>* device )
+     , AlsaDevice* device )
 {
+   _numberOfChannels = nrOfChannels;
    bool success = true;
    auto retVal = snd_pcm_hw_params_set_channels( device->getHandle(),
          _config, nrOfChannels );
@@ -139,7 +153,7 @@ bool AlsaMicConfig::setNumberOfChannels ( unsigned int nrOfChannels
  * External methods/variables:
  *    @extern
  *............................................................................*/
-bool AlsaMicConfig::applySetting( AudioDevice<snd_pcm_t>* device )
+bool AlsaMicConfig::applySetting( AlsaDevice* device )
 {
    bool success = true;
    auto retVal = snd_pcm_nonblock( device->getHandle(), 1 );
@@ -157,5 +171,47 @@ bool AlsaMicConfig::applySetting( AudioDevice<snd_pcm_t>* device )
       cout<<"could not set params"<<endl;
    }
    return success;/*bool*/
+}
+
+/*..............................................................................
+ * @brief setPeriod
+ *
+ * Input Parameters:
+ *    @param: 
+ *        intnumberOfFrames, AudioDevice<snd_pcm_t>* mic
+ * Return Value:
+ *    @returns bool
+ *
+ * External methods/variables:
+ *    @extern
+ *............................................................................*/
+bool AlsaMicConfig::setPeriodSize ( unsigned int numberOfFrames,
+      AlsaDevice* mic )
+{
+   bool retVal = true;
+   auto success = snd_pcm_hw_params_set_period_size( mic->getHandle(),
+         _config, numberOfFrames, 0 );
+   if( success < 0 )
+   {
+      cout<<"could not set period size"<<endl;
+      retVal = false;
+   }
+   return retVal;/*bool*/
+}
+/*..............................................................................
+ * @brief getFrameSize
+ *
+ * Input Parameters:
+ *    @param: 
+ * Return Value:
+ *    @returns unsigned int
+ *
+ * External methods/variables:
+ *    @extern
+ *............................................................................*/
+unsigned int AlsaMicConfig::getFrameSize (  )
+{
+   
+   return _frameSize*_numberOfChannels;/*unsigned int*/
 }
 

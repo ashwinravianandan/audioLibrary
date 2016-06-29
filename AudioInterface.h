@@ -35,6 +35,8 @@ class AudioConfiguration
       virtual bool setBitDepth( unsigned int, Device* audioDevice ) = 0;
       virtual bool setNumberOfChannels( unsigned int, Device* audioDevice ) = 0;
       virtual bool applySetting( Device* audioDevice ) = 0;
+      virtual bool setPeriodSize( unsigned int numberOfFrames, Device* audioDevice ) = 0;
+      virtual unsigned int getFrameSize() = 0;
 };
 
 
