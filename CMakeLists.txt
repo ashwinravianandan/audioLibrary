@@ -2,7 +2,7 @@ cmake_minimum_required( VERSION 2.6 )
 
 project( AudioRec )
 
-set( CMAKE_CXX_FLAGS "-std=c++1y -m32")
+set( CMAKE_CXX_FLAGS "-std=c++1y")
 
 set (SOURCE  AudioQueue.cpp AlsaMicrophone.cpp AlsaMicrophoneConfig.cpp main.cpp )
 

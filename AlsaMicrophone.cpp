@@ -92,11 +92,11 @@ bool AlsaMicrophone::close ( void )
  * External methods/variables:
  *    @extern
  *............................................................................*/
-void AlsaMicrophone::triggerRead ( void )
+void AlsaMicrophone::triggerRead ( void )const
 {
    char *data = new char[1024];
    cout<<"Read triggered"<<endl;
-   auto retVal = snd_pcm_readi( _deviceHandle, data, 512 );
+   auto retVal = snd_pcm_readi( _deviceHandle, data, 1024/_config->getFrameSize() );
    if( retVal == -EPIPE )
    {
       cout<<"underrun"<<endl;
@@ -114,7 +114,7 @@ void AlsaMicrophone::triggerRead ( void )
    {
       cout<<"Reader Thread: "<<retVal<<"bytes read"<<endl;
       list<char> vectorData;
-      retVal *= 2;
+      retVal *= _config->getFrameSize();
       for( auto ptr = data; retVal > 0; --retVal,ptr++ )
       {
          vectorData.push_back( *ptr );
@@ -125,6 +125,54 @@ void AlsaMicrophone::triggerRead ( void )
    delete []data;
 
    return ;/*void*/
+}
+/*..............................................................................
+ * @brief processMicData
+ *
+ * Input Parameters:
+ *    @param: void
+ * Return Value:
+ *    @returns void
+ *
+ * External methods/variables:
+ *    @extern
+ *............................................................................*/
+bool AlsaMicrophone::processMicData ( void )const
+{
+   bool success = true;
+   auto frames = snd_pcm_avail( _deviceHandle );
+   cout<<"Number of frames available from polling: "<<frames;
+   char* buffer = new char[ frames*_config->getFrameSize() ];
+   auto retVal = snd_pcm_readi( _deviceHandle, buffer, frames );
+   if( retVal == -EPIPE )
+   {
+      cout<<"underrun"<<endl;
+      retVal = snd_pcm_prepare( _deviceHandle );
+      if( retVal < 0 )
+      {
+         cout<<"could not prepare node"<<endl;
+         success = false;
+      }
+   }
+   else if( retVal < 0 )
+   {
+      cout<<"error reading data"<<endl;
+      success = false;
+   }
+   else
+   {
+      cout<<"reader thread, Poll phase => read "<<retVal*_config->getFrameSize()<<"bytes"<<endl;
+      list<char> data;
+      retVal*=_config->getFrameSize();
+      for( auto ptr = buffer; retVal > 0; --retVal,ptr++ )
+      {
+         data.push_back( *ptr );
+      }
+      AudioBufferQ::get()->enqueue( data );
+      data.clear();
+   }
+   delete []buffer;
+   return success;/*bool*/
 }
 /*..............................................................................
  * @brief pollAudioDevice
@@ -142,12 +190,11 @@ void AlsaMicrophone::pollAudioDevice (  )
    auto count = snd_pcm_poll_descriptors_count( _deviceHandle );
    auto descriptors = new pollfd[count];
    (void)snd_pcm_poll_descriptors( _deviceHandle, descriptors, count );
+   triggerRead();
    while( 1 )
    {
       if( false == _readInProgress )
          break;
-
-      triggerRead();
 
       if( 0 > poll( descriptors, count, 500 ) )
       {
@@ -165,38 +212,10 @@ void AlsaMicrophone::pollAudioDevice (  )
          }
          else if( POLLIN == pollEvent )
          {
-            auto frames = snd_pcm_avail( _deviceHandle );
-            cout<<"Number of frames available from polling: "<<frames;
-            char* buffer = new char[ frames*2 ];
-            auto retVal = snd_pcm_readi( _deviceHandle, buffer, frames );
-            if( retVal == -EPIPE )
+            if(!processMicData())
             {
-               cout<<"underrun"<<endl;
-               retVal = snd_pcm_prepare( _deviceHandle );
-               if( retVal < 0 )
-               {
-                  cout<<"could not prepare node"<<endl;
-                  break;
-               }
-            }
-            else if( retVal < 0 )
-            {
-               cout<<"error reading data"<<endl;
                break;
             }
-            else
-            {
-               cout<<"reader thread, Poll phase => read "<<retVal*2<<"bytes"<<endl;
-               list<char> data;
-               retVal*=2;
-               for( auto ptr = buffer; retVal > 0; --retVal,ptr++ )
-               {
-                  data.push_back( *ptr );
-               }
-               AudioBufferQ::get()->enqueue( data );
-               data.clear();
-            }
-            delete []buffer;
          }
          else
          {

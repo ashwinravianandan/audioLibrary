@@ -19,7 +19,8 @@ class AudioBufferQ
       ~AudioBufferQ();
 
       static shared_ptr<AudioBufferQ> get( void );
+      void setBufferSize( const size_t nrOfBytes );
       void enqueue( const list<char>& data );
       size_t dequeue( list<char>& data, size_t bytes );
-
 };
+
