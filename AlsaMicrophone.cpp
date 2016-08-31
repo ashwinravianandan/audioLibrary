@@ -28,6 +28,9 @@ bool AlsaMicrophone::open ( const char* deviceName )
    return success;/*bool*/
 }
 
+void test()
+{
+}
 /*..............................................................................
  * @brief read
  *

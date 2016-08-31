@@ -1,6 +1,6 @@
 #include<iostream>
 #include "AlsaMicrophone.h"
-#include "AlsaMicrophoneConfig.h"
+#include "AlsaBaseConfig.h"
 #include <memory>
 #include <fstream>
 #include "AudioQueue.h"
@@ -10,7 +10,7 @@ using namespace std;
 
 int main()
 {
-   unique_ptr<AudioConfiguration<snd_pcm_hw_params_t, snd_pcm_t>> micConfig{ new AlsaMicConfig{} };
+   unique_ptr<AudioConfiguration<snd_pcm_hw_params_t, snd_pcm_t>> micConfig{ new AlsaBaseConfig{} };
    unique_ptr<AudioInput<snd_pcm_t>> microphone{ new AlsaMicrophone{micConfig.get()} };
 
    microphone->open( "plughw:0,0" );

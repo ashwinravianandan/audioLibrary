@@ -42,9 +42,12 @@ class SynchronizedRingBuffer{
       {
          unique_lock<std::mutex> condLock( _Mutex );
 
-         cout<<"Waiting for queue to be filled"<<endl;
-         _QNotEmpty.wait( condLock,
-               [this](){ return !(this->_Buffer.empty()); } );
+         if( _Buffer.empty() )
+         {
+            cout<<"Waiting for queue to be filled"<<endl;
+            _QNotEmpty.wait( condLock,
+                  [this](){ return !(this->_Buffer.empty()); } );
+         }
 
          cout<<"Dequeuing data"<<endl;
          auto bytesRead = 0;
